@@ -1,7 +1,14 @@
+import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { supabase } from './supabase';
+
+/** EAS project id — required by getExpoPushTokenAsync in standalone builds. */
+const PROJECT_ID
+  = Constants.expoConfig?.extra?.eas?.projectId
+    ?? Constants.easConfig?.projectId
+    ?? undefined;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -16,18 +23,31 @@ Notifications.setNotificationHandler({
 export async function registerForPushNotifications(): Promise<string | null> {
   if (Platform.OS === 'web') return null;
 
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  let finalStatus = existing;
+  // Fully defensive: a failure here (missing FCM config, no projectId, native
+  // notif module error) must NEVER crash the app — it runs in the post-login
+  // bootstrap path. On any error we just return null (no push token).
+  try {
+    const { status: existing } = await Notifications.getPermissionsAsync();
+    let finalStatus = existing;
 
-  if (existing !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
+    if (existing !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') return null;
+
+    // projectId is REQUIRED in standalone builds; passing it explicitly avoids
+    // the "No projectId found" throw that otherwise bubbles up as a crash.
+    const token = await Notifications.getExpoPushTokenAsync(
+      PROJECT_ID ? { projectId: PROJECT_ID } : undefined,
+    );
+    return token.data;
   }
-
-  if (finalStatus !== 'granted') return null;
-
-  const token = await Notifications.getExpoPushTokenAsync();
-  return token.data;
+  catch (e) {
+    console.warn('[push] registerForPushNotifications failed (non-fatal):', e);
+    return null;
+  }
 }
 
 export async function savePushToken(userId: string, token: string): Promise<void> {

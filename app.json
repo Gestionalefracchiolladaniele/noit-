@@ -1,12 +1,12 @@
 {
   "expo": {
     "name": "Noit",
-    "slug": "noit",
+    "slug": "noit-app",
     "owner": "praticantisokagakkai",
     "version": "1.0.0",
     "extra": {
       "eas": {
-        "projectId": "c3a711e8-1d8a-496d-9db3-4a2139c6c322"
+        "projectId": "f84f4e24-f5e1-4997-8b28-5a8fdc7e6b96"
       }
     },
     "scheme": "noit",
@@ -24,15 +24,21 @@
       "**/*"
     ],
     "android": {
-      "package": "com.noit.app",
+      "package": "com.noit.app.development",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": ".expo/app-icon-badge/foregroundImage.png",
         "backgroundColor": "#5C3E9C"
+      },
+      "runtimeVersion": {
+        "policy": "appVersion"
       }
     },
     "ios": {
-      "bundleIdentifier": "com.noit.app",
-      "supportsTablet": false
+      "bundleIdentifier": "com.noit.app.development",
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "plugins": [
       "expo-router",
@@ -42,6 +48,13 @@
           "iosUrlScheme": "com.googleusercontent.apps.PLACEHOLDER"
         }
       ]
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/f84f4e24-f5e1-4997-8b28-5a8fdc7e6b96"
+    }
   }
 }

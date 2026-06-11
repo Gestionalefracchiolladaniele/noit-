@@ -9,7 +9,7 @@ import 'tsx/cjs';
 import Env from './env';
 
 const EXPO_ACCOUNT_OWNER = 'praticantisokagakkai';
-const EAS_PROJECT_ID = 'c3a711e8-1d8a-496d-9db3-4a2139c6c322';
+const EAS_PROJECT_ID = 'f84f4e24-f5e1-4997-8b28-5a8fdc7e6b96';
 
 const appIconBadgeConfig: AppIconBadgeConfig = {
   enabled: Env.EXPO_PUBLIC_APP_ENV !== 'production',
@@ -33,7 +33,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   description: `${Env.EXPO_PUBLIC_NAME} Mobile App`,
   owner: EXPO_ACCOUNT_OWNER,
   scheme: Env.EXPO_PUBLIC_SCHEME,
-  slug: 'cartomanzia',
+  slug: 'noit-app',
   version: Env.EXPO_PUBLIC_VERSION.toString(),
   orientation: 'portrait',
   icon: './assets/icon.png',
@@ -41,6 +41,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   newArchEnabled: true,
   updates: {
     fallbackToCacheTimeout: 0,
+    url: 'https://u.expo.dev/f84f4e24-f5e1-4997-8b28-5a8fdc7e6b96',
   },
   assetBundlePatterns: ['**/*'],
   ios: {
@@ -56,9 +57,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#1A1A2E',
+      backgroundColor: '#5C3E9C',
     },
     package: Env.EXPO_PUBLIC_PACKAGE,
+    runtimeVersion: {
+      policy: 'appVersion',
+    },
   },
   web: {
     favicon: './assets/favicon.png',
@@ -68,7 +72,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#1A1A2E',
+        backgroundColor: '#5C3E9C',
         image: './assets/splash.png',
         imageWidth: 150,
       },
@@ -114,6 +118,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-localization',
     'expo-router',
     'expo-video',
+    [
+      '@react-native-google-signin/google-signin',
+      {
+        iosUrlScheme: 'com.googleusercontent.apps.344594201712-6qb8thrj03hj5rho1co2na41sv61g7qg',
+      },
+    ],
     ['app-icon-badge', appIconBadgeConfig],
     ['react-native-edge-to-edge'],
   ],

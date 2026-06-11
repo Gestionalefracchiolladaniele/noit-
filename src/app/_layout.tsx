@@ -4,9 +4,11 @@ import * as SplashScreen from 'expo-splash-screen';
 import { router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useRef, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { CrashScreen } from '@/components/crash-screen';
 import { useNotificationStore } from '@/features/notifications/notification-store';
 import { useAuthStore } from '@/lib/auth-store';
 import { maybeCreateDailyNotification } from '@/lib/daily-notification-runner';
@@ -29,23 +31,47 @@ async function bootstrapUserSession(
   userName: string | null | undefined,
   notificationsEnabled: boolean | null | undefined,
 ) {
+  // Every step is isolated: a failure in one (e.g. push/FCM not configured on a
+  // standalone build) must NEVER crash the app nor block the others. This runs
+  // in the background right after login.
+
   // 1) Realtime subscription — live updates to bell badge
-  if (realtimeUnsub) realtimeUnsub();
-  realtimeUnsub = useNotificationStore.getState().subscribeRealtime(userId);
+  try {
+    if (realtimeUnsub) realtimeUnsub();
+    realtimeUnsub = useNotificationStore.getState().subscribeRealtime(userId);
+  }
+  catch (e) {
+    console.warn('[bootstrap] realtime subscribe failed:', e);
+  }
 
   // 2) Preload notifications into store
-  useNotificationStore.getState().fetchNotifications(userId).catch(() => {});
+  try {
+    useNotificationStore.getState().fetchNotifications(userId).catch(() => {});
+  }
+  catch (e) {
+    console.warn('[bootstrap] fetchNotifications failed:', e);
+  }
 
   // 3) Save Expo push token if notifications opted in
   if (notificationsEnabled !== false) {
-    const token = await registerForPushNotifications();
-    if (token) {
-      await savePushToken(userId, token).catch(() => {});
+    try {
+      const token = await registerForPushNotifications();
+      if (token) {
+        await savePushToken(userId, token).catch(() => {});
+      }
+    }
+    catch (e) {
+      console.warn('[bootstrap] push token failed:', e);
     }
   }
 
   // 4) Maybe create today's daily notification (idempotent)
-  await maybeCreateDailyNotification(userId, userName);
+  try {
+    await maybeCreateDailyNotification(userId, userName);
+  }
+  catch (e) {
+    console.warn('[bootstrap] daily notification failed:', e);
+  }
 }
 
 export default function RootLayout() {
@@ -55,9 +81,26 @@ export default function RootLayout() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const didInit = useRef(false);
   const [cacheReady, setCacheReady] = useState(false);
+  // TEMP: capture async/non-render errors (ErrorBoundary only catches render).
+  const [globalError, setGlobalError] = useState<Error | null>(null);
 
   useEffect(() => {
     void initCache().then(() => setCacheReady(true));
+  }, []);
+
+  // TEMP diagnostic: surface uncaught JS errors on-screen instead of a silent
+  // native crash. Remove once the post-auth crash is identified.
+  useEffect(() => {
+    const g = globalThis as any;
+    const prevHandler = g.ErrorUtils?.getGlobalHandler?.();
+    g.ErrorUtils?.setGlobalHandler?.((err: Error, _isFatal?: boolean) => {
+      setGlobalError(err);
+      // still log so it shows in any attached console
+      console.error('[GLOBAL ERROR]', err);
+    });
+    return () => {
+      if (prevHandler) g.ErrorUtils?.setGlobalHandler?.(prevHandler);
+    };
   }, []);
 
   useEffect(() => {
@@ -141,12 +184,22 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <StatusBar style="light" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="onboarding" />
-          <Stack.Screen name="session" />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
+        {/* TEMP CrashScreen fallback — shows errors on-screen instead of a
+            silent crash, to diagnose the post-auth crash without USB. */}
+        {globalError
+          ? (
+              <CrashScreen error={globalError} resetErrorBoundary={() => setGlobalError(null)} />
+            )
+          : (
+              <ErrorBoundary FallbackComponent={CrashScreen}>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="onboarding" />
+                  <Stack.Screen name="session" />
+                  <Stack.Screen name="(tabs)" />
+                </Stack>
+              </ErrorBoundary>
+            )}
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );

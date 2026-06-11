@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
+import * as React from 'react';
+import { useState } from 'react';
 import { Alert, Dimensions, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import { GoogleSignin, isErrorWithCode, statusCodes } from '@react-native-google-signin/google-signin';
 
 import { Noit } from '@/components/Noit';
 import { PurpleBg } from '@/components/PurpleBg';
@@ -26,13 +27,15 @@ export default function AuthScreen() {
   const [signingIn, setSigningIn] = useState(false);
 
   const handleLogin = async () => {
-    if (signingIn) return;
+    if (signingIn)
+      return;
     setSigningIn(true);
     try {
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
       const idToken = userInfo.data?.idToken;
-      if (!idToken) throw new Error('No ID token returned from Google');
+      if (!idToken)
+        throw new Error('No ID token returned from Google');
 
       const { error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
@@ -42,17 +45,21 @@ export default function AuthScreen() {
       if (error) {
         Alert.alert('Sign-in error', error.message);
       }
-    } catch (e: any) {
+    }
+    catch (e: any) {
       if (isErrorWithCode(e)) {
-        if (e.code === statusCodes.SIGN_IN_CANCELLED) return;
-        if (e.code === statusCodes.IN_PROGRESS) return;
+        if (e.code === statusCodes.SIGN_IN_CANCELLED)
+          return;
+        if (e.code === statusCodes.IN_PROGRESS)
+          return;
         if (e.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
           Alert.alert('Error', 'Google Play Services not available.');
           return;
         }
       }
       Alert.alert('Error', e?.message ?? 'Sign-in failed');
-    } finally {
+    }
+    finally {
       setSigningIn(false);
     }
   };
@@ -62,7 +69,7 @@ export default function AuthScreen() {
       <PurpleBg />
 
       <Svg style={StyleSheet.absoluteFillObject} width={width} height={height} pointerEvents="none">
-        {STARS.map((s) => (
+        {STARS.map(s => (
           <Circle key={s.id} cx={s.cx} cy={s.cy} r={s.r} fill="white" opacity={s.opacity} />
         ))}
       </Svg>
@@ -74,10 +81,15 @@ export default function AuthScreen() {
 
         <Text style={styles.eyebrow}>Welcome</Text>
         <Text style={styles.headline}>
-          Meet <Text style={styles.headlineEm}>Noit</Text>.
+          Meet
+          {' '}
+          <Text style={styles.headlineEm}>Noit</Text>
+          .
         </Text>
         <Text style={styles.sub}>
-          Your daily companion for emotional cravings.{'\n'}A 10-minute ritual to check in with
+          Your daily companion for emotional cravings.
+          {'\n'}
+          A 10-minute ritual to check in with
           yourself.
         </Text>
 
@@ -111,7 +123,9 @@ export default function AuthScreen() {
           </Pressable>
 
           <Text style={styles.legal}>
-            By continuing you agree to our Terms & Privacy.{'\n'}Noit is for adults 18+.
+            By continuing you agree to our Terms & Privacy.
+            {'\n'}
+            Noit is for adults 18+.
           </Text>
         </View>
       </View>
